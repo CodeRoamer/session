@@ -63,7 +63,7 @@ func Register(name string, provide Provider) {
 	provides[name] = provide
 }
 
-type managerConfig struct {
+type Config struct {
 	CookieName        string `json:"cookieName"`
 	EnableSetCookie   bool   `json:"enableSetCookie,omitempty"`
 	Gclifetime        int64  `json:"gclifetime"`
@@ -78,7 +78,7 @@ type managerConfig struct {
 // Manager contains Provider and its configuration.
 type Manager struct {
 	provider Provider
-	config   *managerConfig
+	config   *Config
 }
 
 // Create new Manager with provider name and json config string.
@@ -98,7 +98,7 @@ func NewManager(provideName, config string) (*Manager, error) {
 	if !ok {
 		return nil, fmt.Errorf("session: unknown provide %q (forgotten import?)", provideName)
 	}
-	cf := new(managerConfig)
+	cf := new(Config)
 	cf.EnableSetCookie = true
 	err := json.Unmarshal([]byte(config), cf)
 	if err != nil {
