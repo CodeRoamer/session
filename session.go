@@ -16,7 +16,6 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -93,34 +92,30 @@ type Manager struct {
 // 2. hashfunc  default sha1
 // 3. hashkey default beegosessionkey
 // 4. maxage default is none
-func NewManager(provideName, config string) (*Manager, error) {
+func NewManager(provideName string, config Config) (*Manager, error) {
 	provider, ok := provides[provideName]
 	if !ok {
 		return nil, fmt.Errorf("session: unknown provide %q (forgotten import?)", provideName)
 	}
-	cf := new(Config)
-	cf.EnableSetCookie = true
-	err := json.Unmarshal([]byte(config), cf)
+	config.EnableSetCookie = true
+
+	if config.Maxlifetime == 0 {
+		config.Maxlifetime = config.Gclifetime
+	}
+	err := provider.SessionInit(config.Maxlifetime, config.ProviderConfig)
 	if err != nil {
 		return nil, err
 	}
-	if cf.Maxlifetime == 0 {
-		cf.Maxlifetime = cf.Gclifetime
+	if config.SessionIDHashFunc == "" {
+		config.SessionIDHashFunc = "sha1"
 	}
-	err = provider.SessionInit(cf.Maxlifetime, cf.ProviderConfig)
-	if err != nil {
-		return nil, err
-	}
-	if cf.SessionIDHashFunc == "" {
-		cf.SessionIDHashFunc = "sha1"
-	}
-	if cf.SessionIDHashKey == "" {
-		cf.SessionIDHashKey = string(generateRandomKey(16))
+	if config.SessionIDHashKey == "" {
+		config.SessionIDHashKey = string(generateRandomKey(16))
 	}
 
 	return &Manager{
 		provider,
-		cf,
+		&config,
 	}, nil
 }
 
